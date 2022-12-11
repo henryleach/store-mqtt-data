@@ -246,7 +246,7 @@ def main():
     logging.info(f"Now logging at level: {user_log_level}")
     logger.setLevel(LOGGING_LEVELS[user_log_level])
     
-    # collect the subscription topics, callback functions and QoS
+    # Collect the subscription topics, callback functions and QoS
     # settings in one place:
     subscriptions = [("env/temp/+", on_env_message, 0),
                      ("env/humidity/+", on_env_message, 0),
@@ -268,6 +268,8 @@ def main():
         # already thrown an exception, but if not:
         raise RuntimeError("Not all tables created in SQLite DB as required.")
 
+
+    archive_interval_s = config.getint("storage-settings", "archive_interval_s", fallback=3600)
     # Various things that we have to make available to all
     # callback functions. Ends up being pretty exhaustive
     # as we have to pass the same object to all functions,
@@ -276,7 +278,7 @@ def main():
                        "last_update_table": S.last_update_table,
                        "env_tables": S.env_tables,
                        "gas_table": S.gas_table,
-                       "archive_interval_s": int(config["storage-settings"]["archive_interval_s"]),
+                       "archive_interval_s": archive_interval_s,
                        "subscriptions": subscriptions} 
 
     client_id = config.get("client", "client_id", fallback=None)

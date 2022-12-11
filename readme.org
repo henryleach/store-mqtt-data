@@ -1,13 +1,9 @@
 #+TITLE: Store MQTT Data Read Me
 #+DATE: <2022-11-12 Sat>
 
-A Python 3 script that subscribes to an MQTT broker, and stores the readings of particular stations into an SQLite3 Database.
+A Python 3 script that subscribes to an MQTT broker, and stores the readings into an SQLite3 Database.
 
 * Installation
-
-Clone the directory to where you want to run it from
-
-: git clone ...
 
 Install the dependencies as per your distribution (e.g. on Debian the package names are):
 - mosquitto
@@ -15,15 +11,62 @@ Install the dependencies as per your distribution (e.g. on Debian the package na
 
 (mosiquitto-clients is only for ~mosquitto_pub~ which is used in the ~tests/send_test_mqtt_messages.sh~. Some distributions include these utilities within their mosquitto package, Debian doesn't.)
 
-Then within your Python 3 environment:
-: pip install paho-mqtt
+Clone the directory to where you want to run it from.
+: git clone https://github.com/henryleach/store-mqtt-data.git
 
-* Settings
+Then within your Python 3 environment install the additional modules
+: pip install -r requirements.txt
 
+Change the settings as described in the next section, then run with:
+: python3 store-mqtt-data.py
+
+* Configure
+
+~store-mqtt-data.py~ expects to find the file ~store-mqtt-data.conf~ in the same directory it is in, and will read this for the settings. If this file is missing, or has a different name, it will fail at start.
+
+The included file contains the default values, the only exception is ~db_path~, which will default to ~None~ and if not set fail the script.
+
+The settings needed here depend on the settings of your Mosquitto broker.
+
+As written the script will listen for the subscriptions listed in the ~subscriptions~ list (on line ~250), which also associates each with its relevant callback function. If other subscriptions are needed, they can be added here. Anything else will be ignored.
+
+* Stations
+
+'Stations' are the name for each sensor/station/reporter that sends messages back to the broker, and are listened for. Defining stations is not essential for the script to store readings - it just makes the readings make much more sense.
+
+To save updating the software on the sensors, the subscriptions topics are normally in the format: "env/temp/<station-id>".
+
+Then the stations can be associated with the time they were installed at a particular station in the 'stations' table in the SQLite3 DB. If a sensor is moved, only this table has to be updated. Each station, combined with the location, has a 'from_timestamp_utc' and 'to_timestamp_utc' column, that describes the time it was installed, and associates the readings from that station with that location during this time window. If there is no 'to_timestamp_utc' value, the it's assumed that the column 'current' is ~True~, meaning this is where the sensor is currently installed.
+
+Stations can be created and update more easily with the ~create_update_station.py~ script.  Run:
+: python3 create_update_station.py --help
+for details of use.
+
+* Run with Systemd
+
+If you want the script to run persistently, and after a reboot, the ~store-mqtt_data.service.j2~ template  in the ~resources~ directory can be edited and copied to where ever your system expects to find systemd service units (.e.g. ~/usr/lib/systemd/system/~).
+
+Replace the content of the double curly brackets with the values for your install. Note that the 'username' placeholder here is the user with which the service should run, it has nothing to do with the username configured above to access the MQTT broker.
+
+The ~-u~ option on the python3 call forces the stdout and stderr streams to be unbuffered. Doing so means the outputs appear in the systemd journal correctly.
+
+(the .j2 format can be easily used with Ansible template tasks.)
+
+One in place, reload the systemd daemon to find the new service, and then enable the service:
+: sudo systemctl daemon-reload
+: sudo sustemctl enable store-mqtt-data
+
+* Testing
+
+You can test the installation by using the ~send_test_mqtt_messages.sh~ script in the ~tests~ directory. Update the variables at the start of the script to match your Mosquitto installation, then run with:
+: sh send_test_mqtt_messages.sh
+and check the contents of the DB to see if the messages have arrived, or been ignored, as expected. 
 
 * Known Issues
 
 The table Class is not very robust, it doesn't check that the schema it gets is a valid SQLite schema, it's also very sensitive to correctly separating things with comma and space, e.g. "colA STRING, colB INTEGER" is OK, but "colA STRING,colB INTEGER" is going to cause problems, and probably give you very odd errors. If you're creating your own tables and schemas, be careful.
+
+Currently there are no views created in the DB which joins the stations with the stored readings.
 
 * To Do
 
@@ -33,12 +76,11 @@ The table Class is not very robust, it doesn't check that the schema it gets is 
 - [X] Split into module and main file
   - [X] Tables and Schema into own library
   - [X] Add stations into own module
-- [X] Make variables work in main, use lambda to add arguments to callbacks? - use userdata in the client class.
-- [ ] Adding proper logging for better control and systemd integration
-- [ ] Set config file defaults
-- [ ] Add Testing script
-- [ ] Add data into Stations table from CSV - how best, via Python, or just SQLite to import the CSV data?
-- [ ] Create Views for easier overviews
-  - [ ] Create add view function
-  - [ ] Create basic views
+- [X] Make variables work in main - use userdata in the client class.
+- [X] Adding proper logging for better control and systemd integration
+- [X] Set config file defaults
+- [X] Add Testing script
+- [ ] Restore/bulk add data into Stations table from CSV - how best, via Python, or just get SQLite3 to import the CSV data?
+- [ ] Create Views that show history of each location, based on join with stations table.
+
 

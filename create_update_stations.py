@@ -168,7 +168,7 @@ def main():
     parser.add_argument("-db", "--database",
                         help=("Path to Sqlite3 DB to update. If "
                               "not specified location defined "
-                              "in `store_config.ini` "
+                              "in `store-mqtt-data.conf` "
                               "is used."))
 
     args = parser.parse_args()
@@ -178,14 +178,11 @@ def main():
     else:
         config = configparser.ConfigParser()
 
-        config_file_name = "store_data_config.ini"
+        config_file_name = "store-mqtt-data.conf"
         config_abs_path = os.path.abspath(config_file_name)
         config.read(str(config_abs_path))
-        db_path = config["storage-settings"]["db_path"]
+        db_path = config.get("storage-settings", "db_path", fallback=None)
         abs_db_path = os.path.abspath(db_path)
-
-    #print(args.to_timestamp_utc)
-    #print(db_abs_path)
 
     if args.to_timestamp_utc:
         current = False
