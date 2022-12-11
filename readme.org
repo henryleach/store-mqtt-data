@@ -1,0 +1,44 @@
+#+TITLE: Store MQTT Data Read Me
+#+DATE: <2022-11-12 Sat>
+
+A Python 3 script that subscribes to an MQTT broker, and stores the readings of particular stations into an SQLite3 Database.
+
+* Installation
+
+Clone the directory to where you want to run it from
+
+: git clone ...
+
+Install the dependencies as per your distribution (e.g. on Debian the package names are):
+- mosquitto
+- mosiquitto-clients
+
+(mosiquitto-clients is only for ~mosquitto_pub~ which is used in the ~tests/send_test_mqtt_messages.sh~. Some distributions include these utilities within their mosquitto package, Debian doesn't.)
+
+Then within your Python 3 environment:
+: pip install paho-mqtt
+
+* Settings
+
+
+* Known Issues
+
+The table Class is not very robust, it doesn't check that the schema it gets is a valid SQLite schema, it's also very sensitive to correctly separating things with comma and space, e.g. "colA STRING, colB INTEGER" is OK, but "colA STRING,colB INTEGER" is going to cause problems, and probably give you very odd errors. If you're creating your own tables and schemas, be careful.
+
+* To Do
+
+- [X] Add record gas reading
+- [X] Add Config file inputs
+- [X] Set connection subscriptions
+- [X] Split into module and main file
+  - [X] Tables and Schema into own library
+  - [X] Add stations into own module
+- [X] Make variables work in main, use lambda to add arguments to callbacks? - use userdata in the client class.
+- [ ] Adding proper logging for better control and systemd integration
+- [ ] Set config file defaults
+- [ ] Add Testing script
+- [ ] Add data into Stations table from CSV - how best, via Python, or just SQLite to import the CSV data?
+- [ ] Create Views for easier overviews
+  - [ ] Create add view function
+  - [ ] Create basic views
+

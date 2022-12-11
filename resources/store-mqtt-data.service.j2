@@ -1,0 +1,19 @@
+[Unit]
+Description=MQTT subscriber that records home monitoring sensors
+After=network.target
+Requires=mosquitto.service
+
+[Service]
+Type=simple
+User={{ username }}
+ExecStart={{ path-to-python3 }} -u {{ path-to-store-mqtt-data.py }}
+# the -u option means unbuffered output, so stdout should be passed
+# immedieatly to the journal
+ExecReload=/bin/kill -HUP $MAINPID
+StandardOutput=journal
+WorkingDirectory=~
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
