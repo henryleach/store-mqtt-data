@@ -1,7 +1,7 @@
 #+TITLE: Store MQTT Data Read Me
 #+DATE: <2022-11-12 Sat>
 
-A Python 3 script that subscribes to an MQTT broker, and stores the readings into an SQLite3 Database.
+A Python 3 script that subscribes to an [[https://mosquitto.org/][Mosquitto]] MQTT broker, and stores the readings into an SQLite3 Database.
 
 * Installation
 
@@ -9,7 +9,7 @@ Install the dependencies as per your distribution (e.g. on Debian the package na
 - mosquitto
 - mosiquitto-clients
 
-(mosiquitto-clients is only for ~mosquitto_pub~ which is used in the ~tests/send_test_mqtt_messages.sh~. Some distributions include these utilities within their mosquitto package, Debian doesn't.)
+(mosquitto-clients is only required for ~mosquitto_pub~, which is used in the ~tests/send_test_mqtt_messages.sh~. Some distributions include these utilities within their mosquitto package, Debian doesn't.)
 
 Clone the directory to where you want to run it from.
 : git clone https://github.com/henryleach/store-mqtt-data.git
@@ -36,7 +36,7 @@ As written the script will listen for the subscriptions listed in the ~subscript
 
 To save updating the software on the sensors, the subscriptions topics are normally in the format: "env/temp/<station-id>".
 
-Then the stations can be associated with the time they were installed at a particular station in the 'stations' table in the SQLite3 DB. If a sensor is moved, only this table has to be updated. Each station, combined with the location, has a 'from_timestamp_utc' and 'to_timestamp_utc' column, that describes the time it was installed, and associates the readings from that station with that location during this time window. If there is no 'to_timestamp_utc' value, the it's assumed that the column 'current' is ~True~, meaning this is where the sensor is currently installed.
+Then the stations can be associated with the time they were installed at a particular station in the 'stations' table in the SQLite3 DB. If a sensor is moved, only this table has to be updated. Each row represents a stations presence at a particular location, and has a 'from_timestamp_utc' and 'to_timestamp_utc' column, that describes the time it was installed, and associates the readings from that station with that location during this time window. If there is no 'to_timestamp_utc' value, the it's assumed that the column 'current' is ~True~, meaning this is where the sensor is currently installed.
 
 Stations can be created and update more easily with the ~create_update_station.py~ script.  Run:
 : python3 create_update_station.py --help
@@ -44,13 +44,11 @@ for details of use.
 
 * Run with Systemd
 
-If you want the script to run persistently, and after a reboot, the ~store-mqtt_data.service.j2~ template  in the ~resources~ directory can be edited and copied to where ever your system expects to find systemd service units (.e.g. ~/usr/lib/systemd/system/~).
+If you want the script to run persistently, even after a reboot, the ~store-mqtt_data.service~ template in the ~resources~ directory can be edited and copied to where ever your system expects to find systemd service units (.e.g. ~/usr/lib/systemd/system/~).
 
 Replace the content of the double curly brackets with the values for your install. Note that the 'username' placeholder here is the user with which the service should run, it has nothing to do with the username configured above to access the MQTT broker.
 
 The ~-u~ option on the python3 call forces the stdout and stderr streams to be unbuffered. Doing so means the outputs appear in the systemd journal correctly.
-
-(the .j2 format can be easily used with Ansible template tasks.)
 
 One in place, reload the systemd daemon to find the new service, and then enable the service:
 : sudo systemctl daemon-reload
@@ -64,7 +62,7 @@ and check the contents of the DB to see if the messages have arrived, or been ig
 
 * Known Issues
 
-The table Class is not very robust, it doesn't check that the schema it gets is a valid SQLite schema, it's also very sensitive to correctly separating things with comma and space, e.g. "colA STRING, colB INTEGER" is OK, but "colA STRING,colB INTEGER" is going to cause problems, and probably give you very odd errors. If you're creating your own tables and schemas, be careful.
+The table Class is very basic; it doesn't check that the schema it gets is a valid SQLite schema, it's also very sensitive to correctly separating things with comma and space, e.g. "colA STRING, colB INTEGER" is OK, but "colA STRING,colB INTEGER" is going to cause problems, and probably give you very odd errors. If you're creating your own tables and schemas, be careful.
 
 Currently there are no views created in the DB which joins the stations with the stored readings.
 
