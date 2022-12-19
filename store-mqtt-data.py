@@ -80,7 +80,7 @@ def update_env_latest(decoded, abs_db_path, archive_interval_s, env_tables, last
     # Now just missing last_archive_time_utc, but have to check what the
     # current value in the table is first.
 
-    query = ("SELECT timestamp_utc FROM lastUpdates "
+    query = ("SELECT last_archive_time_utc FROM lastUpdates "
              "WHERE station_id == ? "
              "AND measure_type == ?")
     
@@ -269,7 +269,7 @@ def main():
         raise RuntimeError("Not all tables created in SQLite DB as required.")
 
 
-    archive_interval_s = config.getint("storage-settings", "archive_interval_s", fallback=3600)
+    archive_interval_s = config.getint("storage-settings", "archive_interval_s", fallback=600)
     # Various things that we have to make available to all
     # callback functions. Ends up being pretty exhaustive
     # as we have to pass the same object to all functions,
