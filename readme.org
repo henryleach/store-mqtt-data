@@ -56,7 +56,9 @@ One in place, reload the systemd daemon to find the new service, and then enable
 
 * Testing
 
-You can test the installation by using the ~send_test_mqtt_messages.sh~ script in the ~tests~ directory. Update the variables at the start of the script to match your Mosquitto installation, then run with:
+You can test the installation by using the ~send_test_mqtt_messages.sh~ script in the ~tests~ directory. You will have to change the archive_interval_s to be less than the delay in the script (e.g. change form 600 to 2 seconds).
+
+Update the variables at the start of the script to match your Mosquitto installation, then run with:
 : sh send_test_mqtt_messages.sh
 and check the contents of the DB to see if the messages have arrived, or been ignored, as expected. 
 
@@ -78,6 +80,7 @@ Currently there are no views created in the DB which joins the stations with the
 - [X] Adding proper logging for better control and systemd integration
 - [X] Set config file defaults
 - [X] Add Testing script
+- [X] Reduce archiving amount by only archiving if the value has changed for environmental measurements.
 - [ ] Restore/bulk add data into Stations table from CSV - how best, via Python, or just get SQLite3 to import the CSV data?
 - [ ] Create Views that show history of each location, based on join with stations table.
 

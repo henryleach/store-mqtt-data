@@ -145,6 +145,7 @@ LAST_UPDATE_SCHEMA = ("station_id STRING NOT NULL, "
                       "measure_type STRING NOT NULL, "
                       "measure_value FLOAT, "
                       "last_archive_time_utc TIMESTAMP, "
+                      "last_archive_value FLOAT, "
                       "PRIMARY KEY(station_id, measure_type)")
 
 # For recording gas meter values

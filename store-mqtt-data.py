@@ -8,7 +8,6 @@ from pathlib import Path
 import re
 import schemas_and_tables as S
 
-
 # Setup the logger, default to debug, will change in main()
 # based on config file values
 log_format = "%(asctime)s - %(levelname)s - %(message)s"
@@ -21,6 +20,7 @@ LOGGING_LEVELS ={"DEBUG": logging.DEBUG,
                  "WARNING": logging.WARNING,
                  "ERROR": logging.ERROR,
                  "CRITICAL": logging.CRITICAL}
+
 
 def decode_env_message(msg, env_tables):
     """ Decode an environment MQTT Message to a dict
@@ -58,7 +58,6 @@ def archive_env_measurement(decoded, abs_db_path, env_tables):
     
     table = env_tables[decoded["measure"]]["table"]
              
-
     insert_statement = (f"INSERT INTO {table.tablename}({table.cols_as_string()}) "
                         f"VALUES({table.named_placeholders()})")
 
@@ -80,35 +79,50 @@ def update_env_latest(decoded, abs_db_path, archive_interval_s, env_tables, last
     # Now just missing last_archive_time_utc, but have to check what the
     # current value in the table is first.
 
-    query = ("SELECT last_archive_time_utc FROM lastUpdates "
+    query = ("SELECT last_archive_time_utc, last_archive_value FROM lastUpdates "
              "WHERE station_id == ? "
              "AND measure_type == ?")
+
+    # Connect via URI as we only need a read only connection for this
+    ro_uri_path = "file:" + abs_db_path + "?mode=ro"
     
-    with sqlite3.connect(abs_db_path) as conn:
+    with sqlite3.connect(ro_uri_path, uri=True) as conn:
        cur = conn.cursor()
        res = cur.execute(query, (decoded["station_id"], decoded["measure_type"]))
 
        result = res.fetchall()
+       logger.debug(f"Current lastUpdates values: {result}")
        
        if result == []:
            # No result yet
            last_archive = 0
+           last_archive_val = None
        else:
            last_archive = result[0][0]
+           last_archive_val = float(result[0][1])
        # Exit the DB connection
 
-    if (decoded['timestamp_utc'] - last_archive) > archive_interval_s:
+       # TODO only archive it value has changed, and write last archive value
+       # into lastUpdates
+    if (((decoded["timestamp_utc"] - last_archive) > archive_interval_s) and
+        (decoded["measure_value"] != last_archive_val)):
         # means we should also archive these values
         # return None if successful
         archive_failure = archive_env_measurement(decoded, abs_db_path, env_tables)
+        
         if not archive_failure:
-            decoded["last_archive_time_utc"] = decoded['timestamp_utc']
+            # archive successful
+            decoded["last_archive_time_utc"] = decoded["timestamp_utc"]
+            decoded["last_archive_value"] = decoded["measure_value"]
         else:
             # failed to archive
+            logger.warning(f"Failed the archive reading: {decoded}")
             decoded["last_archive_time_utc"] = last_archive
+            decoded["last_archive_value"] = last_archive_val
 
     else:
         decoded["last_archive_time_utc"] = last_archive
+        decoded["last_archive_value"] = last_archive_val
 
     # With the latest update time dict complete, we can
     # update the latest table. Does it make sense to do
