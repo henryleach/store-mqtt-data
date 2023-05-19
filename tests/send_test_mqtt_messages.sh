@@ -6,8 +6,8 @@
 
 host="127.0.0.1"
 port="1883"
-username="mybasicuser"
-password="goldiflops"
+username="mqtt-user-goes-here"
+password="mqtt-password-goes-here"
 clientname="Test-Script"
 
 # Expected results for tests:
